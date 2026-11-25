@@ -2,7 +2,6 @@ import time
 import urllib.request as engine
 from ConsoleManagement.errors import FetchFailureError
 from ConsoleManagement.results import OutputFinalResult
-import Environment.populate
 
 stealth_mode = True
 
