@@ -1,29 +1,23 @@
-import os, time
+import time
 import urllib.request as engine
 from ConsoleManagement.errors import FetchFailureError
+from ConsoleManagement.results import OutputFinalResult
 import Environment.populate
 
-urls = []
+stealth_mode = True
 
-failed_urls = []
-
-stealth_mode = False
-
-def clear_terminal():
-    print("\033[2J\033[H", end="", flush=True)
-
-def request_process(url: str) -> tuple[float, int]:
-    request = engine.Request(
-        url,
-        headers = {} if not stealth_mode else {
-            "User-Agent": (
-                "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) "
-                "AppleWebKit/605.1.15 (KHTML, like Gecko) "
-                "Version/18.0 Mobile/15E148 Safari/604.1"
-            )
-        }
-    )
-    try: 
+def request_process(url: str) -> tuple[float, int, bool]:
+    try:
+        request = engine.Request(
+            url,
+            headers={} if not stealth_mode else {
+                "User-Agent": (
+                    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) "
+                    "AppleWebKit/605.1.15 (KHTML, like Gecko) "
+                    "Version/18.0 Mobile/15E148 Safari/604.1"
+                )
+            },
+        )
         start = time.perf_counter()
 
         with engine.urlopen(request, timeout=30) as response:
@@ -31,23 +25,30 @@ def request_process(url: str) -> tuple[float, int]:
 
         time_passed = time.perf_counter() - start
 
-        return time_passed, len(data)
+        return time_passed, len(data), True
     except Exception as error:
-        return FetchFailureError(url, error, failed_urls)
+        FetchFailureError(url, error)
+        return 0.0, 0, False
 
-def main():
+def meter_service(url, attempts=10, pure=False):
+    total_duration = 0.0
+    total_size = 0
+    successful_attempts = 0
+    failed_attempts = 0
 
-    clear_terminal()
+    for _ in range(attempts):
+        time_passed, size, succeeded = request_process(url)
+        if succeeded:
+            total_duration += time_passed
+            total_size += size
+            successful_attempts += 1
+        else:
+            failed_attempts += 1
 
-    copied_urls = [*urls]
-    url_index = 0
-    request_durations = 0
-    
-    while len(copied_urls) > url_index:
-        staged_url = copied_urls[url_index]
-        time_passed, responses = request_process(staged_url)
-        request_durations += time_passed
-        url_index+=1
-
-if __name__ == '__main__':
-    main()
+    OutputFinalResult(
+        total_duration,
+        total_size,
+        successful_attempts,
+        failed_attempts,
+        pure,
+    )
