@@ -1,9 +1,15 @@
 import time
 import urllib.request as engine
+from ConsoleManagement.errors import FetchFailureError
 
 urls = []
 
-stealth_mode = True
+failed_urls = []
+
+stealth_mode = False
+
+def clear_terminal():
+    print("\033[2J\033[H", end="", flush=True)
 
 def request_process(url: str) -> tuple[float, int]:
     request = engine.Request(
@@ -16,23 +22,30 @@ def request_process(url: str) -> tuple[float, int]:
             )
         }
     )
-    start = time.perf_counter()
-    with engine.urlopen(request, timeout=30) as response:
-        data = response.read()
+    try: 
+        start = time.perf_counter()
 
-    elapsed = time.perf_counter() - start
+        with engine.urlopen(request, timeout=30) as response:
+            data = response.read()
 
-    return elapsed, len(data)
+        time_passed = time.perf_counter() - start
+
+        return time_passed, len(data)
+    except Exception as error:
+        return FetchFailureError(url, error, failed_urls)
 
 def main():
-    
+
+    clear_terminal()
+
     copied_urls = [*urls]
     url_index = 0
-
+    request_durations = 0
+    
     while len(copied_urls) > url_index:
         staged_url = copied_urls[url_index]
-        time_spent, responses = request_process(staged_url)
-        print(time_spent, responses)
+        time_passed, responses = request_process(staged_url)
+        request_durations += time_passed
         url_index+=1
 
 if __name__ == '__main__':
