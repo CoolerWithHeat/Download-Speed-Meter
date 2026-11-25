@@ -1,6 +1,7 @@
-import time
+import os, time
 import urllib.request as engine
 from ConsoleManagement.errors import FetchFailureError
+import Environment.populate
 
 urls = []
 
